@@ -1,0 +1,1720 @@
+<meta charset="utf-8">
+<title>Moviola SDA</title>
+<meta name="description" content="Scrivi una soluzione in Python e guarda i dati muoversi: array, puntatori, linked list, alberi, grafi, hash map e stack delle chiamate, passo dopo passo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600;700&display=swap">
+<style>
+/*@CODEMIRROR_CSS@*/
+</style>
+<style>
+/* Layout: banco di montaggio. Codice a sinistra, scena animata a destra, timeline sotto la scena. */
+:root {
+  --bg: #e9edf1;
+  --surface: #f8fafb;
+  --surface-2: #dde3e9;
+  --line: #c3ccd6;
+  --ink: #17202b;
+  --muted: #5b6878;
+  --accent: #1f5fd6;
+  --accent-soft: #d6e2fa;
+  --accent-ink: #ffffff;
+  --edge: #5a6878;
+  --cell: #ffffff;
+  --cell-ink: #17202b;
+  --window: #fbe7b5;
+  --visit: #cbeed9;
+  --visit-ink: #11643a;
+  --queued: #fde3cf;
+  --onstack: #e6dcfb;
+  --land: #b9dfc4;
+  --flash: #ffcf4d;
+  --danger: #c2372b;
+  --danger-soft: #fbe1de;
+  --cur-line: #fff0b8;
+  --prev-line: #e4ebf3;
+  --p0: #d9480f; --p1: #1d8a57; --p2: #7048e8; --p3: #0b7fab; --p4: #c2255c; --p5: #9c6b00;
+  --pill-ink: #ffffff;
+  --f-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-ui: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1319; --surface: #151c24; --surface-2: #1d2631; --line: #2d3947; --ink: #e3e9f0;
+    --muted: #8d9aab; --accent: #6d9cff; --accent-soft: #1c2d4d; --accent-ink: #0b1220; --edge: #8392a5;
+    --cell: #1b242f; --cell-ink: #e3e9f0; --window: #4a3b12; --visit: #173d2a; --visit-ink: #86e0ae;
+    --queued: #4a2d17; --onstack: #2f2650; --land: #1f4a30; --flash: #b38a12; --danger: #ff7a6b;
+    --danger-soft: #3d1c1a; --cur-line: #3b3413; --prev-line: #1b2531;
+    --p0: #ff8a4c; --p1: #4fd394; --p2: #a78bfa; --p3: #4cc3ea; --p4: #f472a6; --p5: #e2b33c;
+    --pill-ink: #0b1220;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1319; --surface: #151c24; --surface-2: #1d2631; --line: #2d3947; --ink: #e3e9f0;
+  --muted: #8d9aab; --accent: #6d9cff; --accent-soft: #1c2d4d; --accent-ink: #0b1220; --edge: #8392a5;
+  --cell: #1b242f; --cell-ink: #e3e9f0; --window: #4a3b12; --visit: #173d2a; --visit-ink: #86e0ae;
+  --queued: #4a2d17; --onstack: #2f2650; --land: #1f4a30; --flash: #b38a12; --danger: #ff7a6b;
+  --danger-soft: #3d1c1a; --cur-line: #3b3413; --prev-line: #1b2531;
+  --p0: #ff8a4c; --p1: #4fd394; --p2: #a78bfa; --p3: #4cc3ea; --p4: #f472a6; --p5: #e2b33c;
+  --pill-ink: #0b1220;
+  color-scheme: dark;
+}
+
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 14px;
+  padding-inline: 16px; box-sizing: border-box; display: flex; flex-direction: column;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header.top {
+  display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap; padding-block: 12px 10px;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; margin-right: auto; }
+.brand h1 { font-family: var(--f-display); font-weight: 800; font-size: 22px; letter-spacing: -0.02em; margin: 0; }
+.brand h1 span { color: var(--accent); }
+.brand p { margin: 0; color: var(--muted); font-size: 13px; }
+.py-status { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.py-status i { width: 8px; height: 8px; border-radius: 50%; background: var(--flash); display: inline-block; }
+.py-status.ok i { background: var(--p1); }
+.py-status.err i { background: var(--danger); }
+
+.app {
+  flex: 1; min-height: 0; display: grid; gap: 14px; padding-bottom: 16px;
+  grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+}
+.pane { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.pane-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.pane-head .lbl { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 6px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; line-height: 1.1; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn[disabled] { opacity: 0.55; cursor: wait; }
+.btn.icon { padding: 6px 8px; }
+.btn svg { width: 16px; height: 16px; fill: currentColor; }
+select.sel { border: 1px solid var(--line); background: var(--surface); border-radius: var(--r); padding: 6px 8px; min-width: 0; max-width: 100%; }
+kbd { font-family: var(--f-mono); font-size: 11px; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; color: var(--muted); }
+
+/* editor */
+.editor-wrap { flex: 1; min-height: 0; position: relative; }
+.editor-wrap .CodeMirror, .editor-wrap textarea { position: absolute; inset: 0; height: 100%; width: 100%; }
+.editor-wrap textarea { font-family: var(--f-mono); font-size: 13px; border: 0; padding: 8px; resize: none; background: var(--surface); }
+.CodeMirror { font-family: var(--f-mono); font-size: 13px; line-height: 1.55; background: var(--surface); color: var(--ink); border-radius: 0; }
+.CodeMirror-gutters { background: var(--surface); border-right: 1px solid var(--line); }
+.CodeMirror-linenumber { color: var(--muted); cursor: pointer; padding: 0 6px 0 4px; }
+.CodeMirror-cursor { border-left-color: var(--ink); }
+.CodeMirror-selected, .CodeMirror-focused .CodeMirror-selected { background: var(--accent-soft); }
+.cm-s-default .cm-keyword { color: var(--p2); font-weight: 600; }
+.cm-s-default .cm-def { color: var(--accent); font-weight: 600; }
+.cm-s-default .cm-number { color: var(--p3); }
+.cm-s-default .cm-string { color: var(--p1); }
+.cm-s-default .cm-comment { color: var(--muted); font-style: italic; }
+.cm-s-default .cm-builtin { color: var(--p4); }
+.cm-s-default .cm-variable-2 { color: var(--p5); }
+.cm-s-default .cm-atom { color: var(--p0); }
+.cm-s-default .cm-operator, .cm-s-default .cm-variable, .cm-s-default .cm-property { color: var(--ink); }
+.cm-s-default .cm-meta { color: var(--muted); }
+.cm-s-default .cm-bracket { color: var(--muted); }
+.cm-s-default .cm-error { color: var(--danger); }
+.line-next { background: var(--cur-line); }
+.line-prev { background: var(--prev-line); }
+.line-err { background: var(--danger-soft); }
+.gut-next { color: var(--ink) !important; font-weight: 700; }
+
+.stale { font-size: 12px; color: var(--muted); padding: 6px 10px; border-top: 1px solid var(--line); background: var(--surface-2); }
+.console { border-top: 1px solid var(--line); height: 130px; display: flex; flex-direction: column; }
+.console pre { margin: 0; padding: 8px 10px; overflow: auto; flex: 1; font-family: var(--f-mono); font-size: 12.5px; white-space: pre-wrap; word-break: break-word; }
+.console .err { color: var(--danger); font-weight: 600; }
+.console .note { color: var(--muted); }
+
+/* stage */
+.stage { display: grid; grid-template-rows: minmax(0, 1fr) auto; min-width: 0; min-height: 0; gap: 14px; }
+.stage-top { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 14px; min-height: 0; }
+.scene-pane { min-height: 360px; }
+.caption { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+.caption .step { font-family: var(--f-mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+.chip { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 99px; padding: 2px 8px; background: var(--accent-soft); color: var(--accent); }
+.chip.ret { background: var(--visit); color: var(--visit-ink); }
+.chip.err { background: var(--danger-soft); color: var(--danger); }
+.caption code { font-family: var(--f-mono); font-size: 12.5px; background: var(--surface-2); padding: 2px 6px; border-radius: 4px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scene-wrap { flex: 1; min-height: 0; position: relative; overflow: hidden; border-radius: 0 0 var(--r) var(--r); }
+svg#scene { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; display: block;
+  background-image: radial-gradient(var(--line) 1px, transparent 1px); background-size: 22px 22px; }
+svg#scene.panning { cursor: grabbing; }
+.zoom { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 4px; }
+.zoom .btn { background: var(--surface); padding: 4px 8px; font-size: 13px; }
+.empty-scene { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 13px; pointer-events: none; text-align: center; padding: 20px; }
+
+/* elementi della scena */
+.it text { font-family: var(--f-mono); fill: var(--cell-ink); dominant-baseline: central; text-anchor: middle; font-size: 13px; }
+.it .body { fill: var(--cell); stroke: var(--edge); stroke-width: 1.2; transition: fill .25s; }
+.it .ix { fill: var(--muted); font-size: 10px; }
+.k-title text { text-anchor: start; fill: var(--muted); font-size: 12px; font-weight: 600; font-family: var(--f-mono); }
+.k-title text tspan.kind { fill: var(--muted); font-weight: 400; font-family: var(--f-ui); }
+.k-title text tspan.nm { fill: var(--ink); }
+.it.win .body { fill: var(--window); }
+.it.visited .body { fill: var(--visit); }
+.it.queued .body { fill: var(--queued); }
+.it.land .body { fill: var(--land); }
+.it.onstack .body { fill: var(--onstack); }
+.it.active .body { stroke: var(--accent); stroke-width: 2.6; }
+.it.ring .body { stroke: var(--pc, var(--p0)); stroke-width: 3; }
+.it.out text.v { fill: var(--muted); }
+.it.flash .body { animation: flash 0.9s ease-out; }
+@keyframes flash { 0% { fill: var(--flash); } 100% { } }
+.k-shade .body { fill: var(--window); stroke: none; opacity: .55; }
+.k-lnode .div { stroke: var(--edge); stroke-width: 1.2; }
+.k-lnode .dot { fill: var(--edge); }
+.k-null text { fill: var(--muted); font-size: 15px; }
+.k-kv .kbody { fill: var(--surface-2); stroke: var(--edge); stroke-width: 1.2; }
+.k-kv text.kt { text-anchor: start; font-weight: 600; }
+.k-kv text.vt { text-anchor: start; }
+.k-obj text { text-anchor: start; font-size: 12px; }
+.k-obj text.hd { font-weight: 700; fill: var(--muted); font-family: var(--f-ui); }
+.k-chip .body { rx: 13px; }
+.k-elabel text { font-size: 11px; fill: var(--muted); }
+.k-elabel .body { fill: var(--surface); stroke: none; }
+.k-pill .body { stroke: none; fill: var(--pc, var(--accent)); }
+.k-pill text { fill: var(--pill-ink); font-size: 11.5px; font-weight: 700; font-family: var(--f-ui); }
+.k-pill .tick { fill: var(--pc, var(--accent)); }
+.k-pill.dim { opacity: 0.75; }
+.k-pill.neutral .body, .k-pill.neutral .tick { fill: var(--muted); }
+path.edge { fill: none; stroke: var(--edge); stroke-width: 1.6; }
+path.edge.k-tree, path.edge.undir { marker-end: none; }
+path.edge.k-ref { stroke-dasharray: 4 3; }
+path.edge.k-ptr { stroke: var(--pc, var(--edge)); stroke-width: 1.8; marker-end: none; }
+path.edge.hot { stroke: var(--accent); stroke-width: 2.4; }
+#ah path { fill: var(--edge); }
+
+/* timeline */
+.transport { padding: 10px 12px; display: grid; gap: 8px; }
+.tbar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tbar .grow { flex: 1; }
+.tbar label { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+.timeline { position: relative; height: 46px; cursor: pointer; border-radius: 4px; background: var(--surface-2); }
+.timeline canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.timeline-legend { font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+
+/* frames */
+.frames { overflow: auto; flex: 1; padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+.frame { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.frame.top { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.frame h3 { margin: 0; padding: 5px 8px; font-size: 12.5px; font-family: var(--f-mono); display: flex; justify-content: space-between; gap: 6px; border-bottom: 1px solid var(--line); }
+.frame h3 small { color: var(--muted); font-weight: 400; }
+.frame table { width: 100%; border-collapse: collapse; font-family: var(--f-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+.frame td { padding: 3px 8px; border-top: 1px solid var(--surface-2); vertical-align: top; }
+.frame td:first-child { color: var(--muted); white-space: nowrap; width: 1%; }
+.frame td:last-child { word-break: break-word; }
+.frame tr.chg td:last-child { animation: flashbg 1s ease-out; }
+.frame .ret td { color: var(--visit-ink); font-weight: 700; }
+@keyframes flashbg { 0% { background: var(--flash); } 100% { background: transparent; } }
+.frame.compact table { display: none; }
+.frame .args { font-family: var(--f-mono); font-size: 11.5px; color: var(--muted); padding: 3px 8px 5px; word-break: break-word; }
+.hint { font-size: 12px; color: var(--muted); padding: 0 10px 10px; line-height: 1.45; }
+.hint b { color: var(--ink); }
+
+@media (max-width: 1180px) {
+  .stage-top { grid-template-columns: minmax(0, 1fr); }
+  .frames-pane { max-height: 320px; }
+}
+@media (max-width: 860px) {
+  html, body { height: auto; }
+  .app { grid-template-columns: minmax(0, 1fr); flex: none; }
+  .stage { grid-template-rows: auto auto; }
+  .code-pane { height: 440px; }
+  .scene-pane { height: 62svh; min-height: 340px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .it.flash .body, .frame tr.chg td:last-child { animation: none; }
+}
+</style>
+
+<header class="top">
+  <div class="brand">
+    <h1>Moviola <span>SDA</span></h1>
+    <p>Scrivi la soluzione, premi Esegui, guarda i dati muoversi.</p>
+  </div>
+  <div class="py-status" id="py-status"><i></i><span>Python in caricamento…</span></div>
+</header>
+
+<main class="app">
+  <section class="pane code-pane" aria-label="Codice">
+    <div class="pane-head">
+      <select class="sel" id="examples" aria-label="Esempi" style="flex:1"></select>
+      <button class="btn primary" id="run" title="Ctrl+Invio">
+        <svg viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z"/></svg>Esegui
+      </button>
+    </div>
+    <div class="editor-wrap"><textarea id="code" spellcheck="false" aria-label="Codice Python"></textarea></div>
+    <div class="stale" id="stale" hidden>Hai modificato il codice. Premi <b>Esegui</b> (<kbd>Ctrl</kbd>+<kbd>Invio</kbd>) per ricalcolare l'animazione.</div>
+    <div class="console">
+      <div class="pane-head"><span class="lbl">Output</span></div>
+      <pre id="out"></pre>
+    </div>
+  </section>
+
+  <section class="stage">
+    <div class="stage-top">
+      <div class="pane scene-pane">
+        <div class="pane-head caption" id="caption"></div>
+        <div class="scene-wrap">
+          <svg id="scene" role="img" aria-label="Stato delle strutture dati al passo corrente">
+            <defs>
+              <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0,1 L10,5 L0,9 z"/>
+              </marker>
+            </defs>
+            <g id="l-back"></g><g id="l-edges"></g><g id="l-nodes"></g><g id="l-pills"></g>
+          </svg>
+          <div class="empty-scene" id="empty-scene" hidden>Nessuna struttura dati da disegnare in questo passo.</div>
+          <div class="zoom">
+            <button class="btn" id="zoom-in" aria-label="Ingrandisci">+</button>
+            <button class="btn" id="zoom-out" aria-label="Riduci">−</button>
+            <button class="btn" id="fit">Inquadra</button>
+          </div>
+        </div>
+      </div>
+      <div class="pane frames-pane">
+        <div class="pane-head"><span class="lbl">Stack delle chiamate</span></div>
+        <div class="frames" id="frames"></div>
+      </div>
+    </div>
+
+    <div class="pane transport">
+      <div class="tbar">
+        <button class="btn icon" id="b-first" aria-label="Primo passo"><svg viewBox="0 0 16 16"><path d="M3 3h2v10H3zM14 3v10L6 8z"/></svg></button>
+        <button class="btn icon" id="b-prev" aria-label="Passo indietro"><svg viewBox="0 0 16 16"><path d="M11 3v10L4 8z"/></svg></button>
+        <button class="btn primary" id="b-play" aria-label="Riproduci"><svg viewBox="0 0 16 16"><path d="M4 2.5v11l9-5.5z"/></svg><span>Play</span></button>
+        <button class="btn icon" id="b-next" aria-label="Passo avanti"><svg viewBox="0 0 16 16"><path d="M5 3v10l7-5z"/></svg></button>
+        <button class="btn icon" id="b-last" aria-label="Ultimo passo"><svg viewBox="0 0 16 16"><path d="M11 3h2v10h-2zM2 3v10l8-5z"/></svg></button>
+        <span class="grow"></span>
+        <label for="speed">Velocità
+          <select class="sel" id="speed">
+            <option value="1">1 passo/s</option>
+            <option value="2">2 passi/s</option>
+            <option value="3" selected>3 passi/s</option>
+            <option value="6">6 passi/s</option>
+            <option value="12">12 passi/s</option>
+            <option value="30">30 passi/s</option>
+          </select>
+        </label>
+        <label for="maxsteps">Limite
+          <select class="sel" id="maxsteps">
+            <option value="1000">1000 passi</option>
+            <option value="3000" selected>3000 passi</option>
+            <option value="8000">8000 passi</option>
+          </select>
+        </label>
+      </div>
+      <div class="timeline" id="timeline" role="slider" tabindex="0" aria-label="Linea temporale dell'esecuzione" aria-valuemin="1">
+        <canvas id="tl"></canvas>
+      </div>
+      <div class="timeline-legend"><span>Altezza = profondità della ricorsione. Clicca o trascina per saltare.</span><span><kbd>Spazio</kbd> play · <kbd>←</kbd><kbd>→</kbd> passi</span></div>
+    </div>
+  </section>
+</main>
+<p class="hint">Aiutanti già pronti: <b>ListNode</b>, <b>TreeNode</b>, <b>build_list([..])</b>, <b>build_tree([..])</b> in ordine per livelli, <b>list_to_array(head)</b>, più <b>deque</b>, <b>heapq</b>, <b>defaultdict</b>, <b>Counter</b>, <b>inf</b>. Le variabili intere usate come indice (<b>i</b>, <b>left</b>, <b>mid</b>, o qualunque nome che scrivi dentro <b>arr[…]</b>) diventano frecce sotto l'array. Clicca il numero di una riga per saltare alla prossima volta che viene eseguita. Trascina le strutture per spostarle, rotellina per lo zoom.</p>
+
+<script type="text/x-python" id="tracer-src">@TRACER_PY@</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script>
+"use strict";
+const EXAMPLES = /*@EXAMPLES@*/null;
+const FIRST_TRACE = /*@FIRST_TRACE@*/null;
+const TRACER_SRC = document.getElementById("tracer-src").textContent;
+const PYODIDE_BASES = ["pyodide/", "https://cdn.jsdelivr.net/npm/pyodide@0.26.4/"];
+const SVGNS = "http://www.w3.org/2000/svg";
+const $ = (s) => document.querySelector(s);
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ---------------------------------------------------------------- misure
+const CW = 46, CH = 40;            // cella array
+const MW = 36;                      // cella matrice
+const LW = 62, LH = 36, LX = 100;   // nodo linked list
+const TR = 19, TX = 50, TY = 66;    // nodo albero
+const GR = 21;                      // nodo grafo
+const PH = 20;                      // pillola puntatore
+const GAP = 40, TITLE = 26;
+const CHAR = 7.9;
+
+const IDX_NAME = /^(i|j|l|r|lo|hi|low|high|left|right|mid|start|end|begin|slow|fast|p|q|p1|p2|idx|index|ptr|pos|top|write|read|cur|curr|L|R)$|(_idx|idx|_ptr|ptr|_pos|_i|_j)$/i;
+const WINDOW_PAIRS = [["left", "right"], ["l", "r"], ["lo", "hi"], ["low", "high"], ["start", "end"], ["L", "R"]];
+const MATRIX_PAIRS = [["r", "c"], ["i", "j"], ["row", "col"], ["x", "y"], ["ni", "nj"], ["nr", "nc"], ["cr", "cc"]];
+const STACK_NAME = /^(stack|stk|st|pila|mono|monostack)$|stack$/i;
+const QUEUE_NAME = /^(q|queue|coda|dq|frontier|bfs)$|queue$/i;
+const HEAP_NAME = /^(heap|h|pq|minheap|maxheap|min_heap|max_heap|heapq_|hp)$|heap$/i;
+const GRAPH_NAME = /^(graph|g|adj|adj_list|adjlist|adjacency|grafo|neighbors|edges_of)$/i;
+const NODE_VAR = /^(node|cur|curr|u|v|w|nei|nb|neighbor|neighbour|nxt|start|src|source|dst|dest|target|at|nodo|vicino|x)$/i;
+const PY_WORDS = new Set("and or not in is if else for while return None True False len range min max abs self lambda int str float".split(" "));
+
+// ---------------------------------------------------------------- stato
+const S = {
+  trace: null, i: 0, playing: false, timer: null, sps: 3,
+  subs: new Map(), subsAny: new Set(), pairs: [],
+  lhome: new Map(), gpos: new Map(), offs: new Map(), colors: new Map(),
+  autoFit: true, view: { x: 0, y: 0, w: 800, h: 500 }, stale: false,
+  items: new Map(), edges: new Map(), anim: null, lastLines: [],
+};
+
+// ---------------------------------------------------------------- analisi del codice
+function analyzeCode(code) {
+  const subs = new Map(), any = new Set(), pairs = [];
+  const re = /([A-Za-z_][\w.]*)((?:\[[^\[\]]*\])+)/g;
+  for (const m of code.matchAll(re)) {
+    const name = m[1].replace(/^self\./, "self.");
+    const groups = [...m[2].matchAll(/\[([^\[\]]*)\]/g)].map((g) => g[1]);
+    const ids = (s) => (s.match(/[A-Za-z_]\w*/g) || []).filter((w) => !PY_WORDS.has(w));
+    if (!subs.has(name)) subs.set(name, new Set());
+    for (const w of ids(groups[0])) { subs.get(name).add(w); any.add(w); }
+    if (groups.length >= 2) {
+      const a = ids(groups[0])[0], b = ids(groups[1])[0];
+      if (a && b && !pairs.some((p) => p[0] === a && p[1] === b)) pairs.push([a, b]);
+      for (const w of ids(groups[1])) { subs.get(name).add(w); any.add(w); }
+    }
+  }
+  S.subs = subs; S.subsAny = any; S.pairs = [...pairs, ...MATRIX_PAIRS];
+}
+
+// ---------------------------------------------------------------- valori
+function fmt(enc, heap, depth = 0, raw = false) {
+  switch (enc[0]) {
+    case "N": return "None";
+    case "B": return enc[1] ? "True" : "False";
+    case "I": return String(enc[1]);
+    case "F": return typeof enc[1] === "number" ? (Number.isInteger(enc[1]) ? enc[1].toFixed(1) : String(+enc[1].toPrecision(6))) : enc[1];
+    case "S": return raw ? enc[1] : JSON.stringify(enc[1]).replace(/^"|"$/g, "'");
+    case "X": return enc[1];
+    case "R": return shortObj(heap, enc[1], depth);
+  }
+  return "?";
+}
+function shortObj(heap, id, depth) {
+  const h = heap[id];
+  if (!h) return "…";
+  if (depth > 2) return h.t === "dict" ? "{…}" : h.t === "set" ? "{…}" : "[…]";
+  const more = (h.n ?? 0) > (h.items ? h.items.length : h.entries ? h.entries.length : 0) ? ", …" : "";
+  switch (h.t) {
+    case "list": return "[" + h.items.map((e) => fmt(e, heap, depth + 1)).join(", ") + more + "]";
+    case "tuple": return "(" + h.items.map((e) => fmt(e, heap, depth + 1)).join(", ") + (h.items.length === 1 ? "," : "") + ")";
+    case "deque": return "deque([" + h.items.map((e) => fmt(e, heap, depth + 1)).join(", ") + more + "])";
+    case "set": return h.items.length ? "{" + h.items.map((e) => fmt(e, heap, depth + 1)).join(", ") + more + "}" : "set()";
+    case "dict": return "{" + h.entries.map(([k, v]) => fmt(k, heap, depth + 1) + ": " + fmt(v, heap, depth + 1)).join(", ") + more + "}";
+    case "lnode": return "Nodo(" + fmt(h.val, heap, depth + 1) + ")";
+    case "tnode": return "Albero(" + fmt(h.val, heap, depth + 1) + ")";
+    default: return h.c;
+  }
+}
+function clip(s, n) { return s.length > n ? s.slice(0, n - 1) + "…" : s; }
+function eqEnc(a, b) { return a && b && a[0] === b[0] && a[1] === b[1]; }
+
+function colorFor(name) {
+  if (!S.colors.has(name)) S.colors.set(name, S.colors.size % 6);
+  return `var(--p${S.colors.get(name)})`;
+}
+
+// ---------------------------------------------------------------- costruzione della scena
+// Ogni passo diventa un elenco di elementi con chiave stabile e posizione.
+// Il motore di animazione interpola le posizioni tra un passo e il successivo.
+function buildScene(step) {
+  const heap = step.heap;
+  const frames = step.stack;
+  const top = frames[frames.length - 1];
+  const glob = frames[0];
+  const scopes = top === glob ? [["T", top]] : [["G", glob], ["T", top]];
+  const items = [], edges = [];
+  const sections = [];
+
+  // variabili radice (globali + frame corrente); self.x viene espanso
+  const roots = [];
+  for (const [sc, fr] of scopes) {
+    for (const [name, enc] of fr.vars) {
+      if (name === "self" && enc[0] === "R" && heap[enc[1]] && heap[enc[1]].t === "obj") {
+        for (const [a, e] of Object.entries(heap[enc[1]].attrs)) roots.push({ sc, name: "self." + a, enc: e });
+        continue;
+      }
+      roots.push({ sc, name, enc });
+    }
+  }
+  const ints = roots.filter((v) => v.enc[0] === "I");
+  const topNames = new Set(top.vars.map((v) => v[0]));
+
+  // nodi di liste e alberi raggiungibili da qualunque frame
+  const lnodes = new Set(), tnodes = new Set(), seen = new Set();
+  const walk = (enc) => {
+    if (!enc || enc[0] !== "R" || seen.has(enc[1])) return;
+    const id = enc[1], h = heap[id];
+    seen.add(id);
+    if (!h) return;
+    if (h.t === "lnode") { lnodes.add(id); walk(h.next); Object.values(h.extra).forEach(walk); }
+    else if (h.t === "tnode") { tnodes.add(id); walk(h.left); walk(h.right); Object.values(h.extra).forEach(walk); }
+    else if (h.items) h.items.forEach(walk);
+    else if (h.entries) h.entries.forEach(([k, v]) => { walk(k); walk(v); });
+    else if (h.attrs) Object.values(h.attrs).forEach(walk);
+  };
+  for (const fr of frames) for (const [, enc] of fr.vars) walk(enc);
+
+  // nomi delle variabili per ogni oggetto (solo globali + frame corrente)
+  const names = new Map();
+  for (const v of roots) if (v.enc[0] === "R") {
+    if (!names.has(v.enc[1])) names.set(v.enc[1], []);
+    const n = names.get(v.enc[1]);
+    if (!n.includes(v.name)) n.push(v.name);
+  }
+
+  // insiemi "visitati" e code, per colorare celle, nodi del grafo, alberi
+  const visitSets = [], queues = [];
+  for (const v of roots) if (v.enc[0] === "R") {
+    const h = heap[v.enc[1]];
+    if (!h) continue;
+    if (h.t === "set" || (h.t === "dict" && /seen|visit|vis|dist|parent|color|memo/i.test(v.name))) visitSets.push(h);
+    if (h.t === "deque" || (h.t === "list" && (QUEUE_NAME.test(v.name) || STACK_NAME.test(v.name)))) queues.push(h);
+  }
+  const keyOf = (enc) => (enc[0] === "R" ? tupleKey(heap, enc[1]) : fmt(enc, heap));
+  const visited = new Set(), queued = new Set();
+  for (const h of visitSets) (h.items || h.entries.map((e) => e[0])).forEach((e) => visited.add(keyOf(e)));
+  for (const h of queues) h.items.forEach((e) => queued.add(keyOf(e)));
+
+  const order = [];
+  const pushSec = (key, fn) => { if (!order.some((o) => o.key === key)) order.push({ key, fn }); };
+
+  for (const v of roots) {
+    if (v.enc[0] === "S" && v.enc[1].length >= 2 && v.enc[1].length <= 80) {
+      const chars = [...v.enc[1]].map((c) => ["S", c]);
+      const ptrs = pointersFor([v.name], chars.length, ints, true);
+      if (ptrs.length) pushSec(`str:${v.sc}:${v.name}`, (sec) => layoutArray(sec, { id: `s${v.sc}${v.name}`, items: chars, n: chars.length, t: "str" }, [v.name], ptrs, heap, "stringa", edges));
+      continue;
+    }
+    if (v.enc[0] !== "R") continue;
+    const id = v.enc[1], h = heap[id];
+    if (!h) continue;
+    const nm = names.get(id) || [v.name];
+    if (h.t === "lnode") { pushSec("LL", (sec) => layoutLists(sec, heap, lnodes, roots, frames, items, edges)); continue; }
+    if (h.t === "tnode") { pushSec("TR", (sec) => layoutTrees(sec, heap, tnodes, roots, frames, edges)); continue; }
+    if (h.t === "list" || h.t === "tuple" || h.t === "deque") {
+      if (nm.some((n) => GRAPH_NAME.test(n.replace(/^self\./, ""))) && isAdjList(h, heap)) {
+        pushSec("G" + id, (sec) => layoutGraph(sec, id, h, heap, nm, roots, visited, queued, edges, true));
+      } else if (isMatrix(h, heap)) {
+        pushSec("M" + id, (sec) => layoutMatrix(sec, id, h, heap, nm, ints, visited, queued, edges));
+      } else {
+        const ptrs = pointersFor(nm, h.n, ints, false, h.t !== "deque" && h.items.every((e) => e[0] !== "R"));
+        const isHeap = h.t === "list" && nm.some((n) => HEAP_NAME.test(n.replace(/^self\./, "")));
+        let kind = h.t === "deque" ? "deque" : h.t === "tuple" ? "tupla" : "lista";
+        if (isHeap) kind = "heap";
+        else if (h.t === "list" && nm.some((n) => STACK_NAME.test(n))) kind = "stack";
+        else if (h.t === "list" && nm.some((n) => QUEUE_NAME.test(n))) kind = "coda";
+        pushSec("A" + id, (sec) => layoutArray(sec, { id, ...h }, nm, ptrs, heap, kind, edges));
+      }
+      continue;
+    }
+    if (h.t === "dict") {
+      if (isGraphDict(h, heap, nm)) pushSec("G" + id, (sec) => layoutGraph(sec, id, h, heap, nm, roots, visited, queued, edges, false));
+      else pushSec("D" + id, (sec) => layoutDict(sec, id, h, heap, nm, edges));
+      continue;
+    }
+    if (h.t === "set") { pushSec("S" + id, (sec) => layoutSet(sec, id, h, heap, nm)); continue; }
+    pushSec("O" + id, (sec) => layoutObj(sec, id, h, heap, nm, edges));
+  }
+
+  if (lnodes.size) pushSec("LL", (sec) => layoutLists(sec, heap, lnodes, roots, frames, items, edges));
+  if (tnodes.size) pushSec("TR", (sec) => layoutTrees(sec, heap, tnodes, roots, frames, edges));
+
+  // dispone le sezioni in colonne, scegliendo il numero di colonne adatto alla forma della scena
+  for (const { key, fn } of order) {
+    const sec = { key, items: [], w: 0, h: 0 };
+    fn(sec);
+    sections.push(sec);
+  }
+  const place = packColumns(sections);
+  sections.forEach((sec, i) => {
+    const off = S.offs.get(sec.key) || { x: 0, y: 0 };
+    for (const it of sec.items) { it.x += place[i].x + off.x; it.y += place[i].y + off.y; it.sec = sec.key; items.push(it); }
+  });
+
+  // frecce dalle celle verso i nodi disegnati
+  const keys = new Set(items.map((i) => i.key));
+  const finalEdges = [];
+  for (const e of edges) {
+    if (e.toId !== undefined) { e.b = "n" + e.toId; }
+    if (keys.has(e.a) && keys.has(e.b)) finalEdges.push(e);
+  }
+  return { items, edges: finalEdges };
+}
+
+function packColumns(sections) {
+  const r = scene.getBoundingClientRect();
+  const aspect = (r.width || 800) / (r.height || 500);
+  let best = null;
+  const totalH = sections.reduce((a, s) => a + s.h + GAP, 0);
+  for (let cols = 1; cols <= Math.min(3, sections.length); cols++) {
+    const limit = totalH / cols;
+    const place = [];
+    let x = 0, y = 0, colW = 0, col = 0, W = 0, H = 0;
+    for (const sec of sections) {
+      if (y > 0 && y + sec.h > limit * 1.08 && col < cols - 1) { x += colW + GAP * 1.5; y = 0; colW = 0; col++; }
+      place.push({ x, y });
+      y += sec.h + GAP;
+      colW = Math.max(colW, sec.w);
+      W = Math.max(W, x + colW); H = Math.max(H, y - GAP);
+    }
+    const need = Math.max(W / aspect, H);
+    if (!best || need < best.need * 0.92) best = { need, place };
+  }
+  return best ? best.place : [];
+}
+
+function tupleKey(heap, id) {
+  const h = heap[id];
+  if (h && h.t === "tuple") return "(" + h.items.map((e) => fmt(e, heap, 3)).join(",") + ")";
+  if (h && (h.t === "lnode" || h.t === "tnode")) return "#" + id;
+  return "#" + id;
+}
+
+function pointersFor(nm, n, ints, isStr, prims = true) {
+  const out = [];
+  const arrNames = nm.map((x) => x.replace(/^self\./, "self."));
+  for (const v of ints) {
+    let ok = arrNames.some((a) => S.subs.get(a) && S.subs.get(a).has(v.name));
+    if (!ok) ok = prims && !S.subsAny.has(v.name) && IDX_NAME.test(v.name) && v.enc[1] < n;
+    if (ok && v.enc[1] >= -1 && v.enc[1] <= n) out.push({ name: v.name, sc: v.sc, i: v.enc[1] });
+  }
+  return out;
+}
+
+function isMatrix(h, heap) {
+  if (!h.items.length || h.items.length > 40) return false;
+  let w = -1;
+  for (const e of h.items) {
+    if (e[0] !== "R") return false;
+    const r = heap[e[1]];
+    if (!r || (r.t !== "list" && r.t !== "tuple") || !r.items.length || r.items.length > 40) return false;
+    if (r.items.some((x) => x[0] === "R")) return false;
+    if (w === -1) w = r.items.length; else if (w !== r.items.length) return false;
+  }
+  return true;
+}
+function isAdjList(h, heap) {
+  return h.items.length > 0 && h.items.every((e) => e[0] === "R" && heap[e[1]] && heap[e[1]].items &&
+    heap[e[1]].items.every((x) => x[0] === "I" || (x[0] === "R" && heap[x[1]] && heap[x[1]].t === "tuple")));
+}
+function neighborsOf(enc, heap) {
+  // restituisce [[chiave, peso|null], ...] per il valore di una lista di adiacenza
+  if (enc[0] !== "R") return null;
+  const c = heap[enc[1]];
+  if (!c || !c.items) return null;
+  const out = [];
+  for (const x of c.items) {
+    if (x[0] === "R") {
+      const t = heap[x[1]];
+      if (t && (t.t === "tuple" || t.t === "list") && t.items.length === 2 && t.items[0][0] !== "R") out.push([fmt(t.items[0], heap), fmt(t.items[1], heap)]);
+      else return null;
+    } else out.push([fmt(x, heap), null]);
+  }
+  return out;
+}
+function isGraphDict(h, heap, nm) {
+  if (!h.entries.length || h.entries.length > 40) return false;
+  if (h.entries.some(([k]) => k[0] === "R")) return false;
+  const keys = new Set(h.entries.map(([k]) => fmt(k, heap)));
+  let tot = 0, hit = 0;
+  for (const [, v] of h.entries) {
+    const ns = neighborsOf(v, heap);
+    if (!ns) return false;
+    for (const [k] of ns) { tot++; if (keys.has(k)) hit++; }
+  }
+  if (nm.some((n) => GRAPH_NAME.test(n.replace(/^self\./, "")))) return true;
+  return tot > 0 && hit / tot >= 0.6;
+}
+
+// ---- helper per aggiungere elementi
+function add(sec, key, kind, x, y, w, h, props = {}) {
+  const it = { key, kind, x, y, w, h, props };
+  sec.items.push(it);
+  sec.w = Math.max(sec.w, x + w / 2);
+  sec.h = Math.max(sec.h, y + h / 2);
+  return it;
+}
+function title(sec, nm, kind) {
+  add(sec, "t:" + sec.key, "title", 0, 8, 10, 16, { names: nm.join(" = "), kind });
+  sec.w = Math.max(sec.w, (nm.join(" = ").length + (kind || "").length) * 7.4 + 12);
+}
+function pillW(t) { return Math.max(26, t.length * 7.2 + 16); }
+
+// ---- array, stringhe, stack, code, heap
+function layoutArray(sec, h, nm, ptrs, heap, kind, edges) {
+  const n = h.items.length;
+  const label = kind === "stringa" ? "stringa" : `${kind} · ${h.n} ${h.n === 1 ? "elemento" : "elementi"}`;
+  title(sec, nm, label);
+  const top = TITLE + 12 + (kind === "stack" || kind === "coda" || kind === "deque" ? 18 : 0);
+  const cy = top + CH / 2;
+  // finestra (sliding window / due puntatori)
+  const by = Object.fromEntries(ptrs.map((p) => [p.name, p.i]));
+  let win = null;
+  for (const [a, b] of WINDOW_PAIRS) if (by[a] !== undefined && by[b] !== undefined && by[a] <= by[b]) { win = [Math.max(0, by[a]), Math.min(n - 1, by[b])]; break; }
+  if (win && win[0] <= win[1]) {
+    const x0 = win[0] * CW, x1 = (win[1] + 1) * CW;
+    add(sec, `w${h.id}`, "shade", (x0 + x1) / 2, cy, x1 - x0 + 8, CH + 10);
+  }
+  const cellW = Math.max(CW, Math.min(120, Math.max(...h.items.map((e) => fmt(e, heap, 1, true).length), 1) * CHAR + 14));
+  for (let i = 0; i < n; i++) {
+    const e = h.items[i];
+    const text = kind === "stringa" ? e[1] : e[0] === "R" && heap[e[1]] && (heap[e[1]].t === "lnode" || heap[e[1]].t === "tnode") ? "•" : fmt(e, heap, 1);
+    const cls = [];
+    if (win && i >= win[0] && i <= win[1]) cls.push("win");
+    const it = add(sec, `c${h.id}:${i}`, "cell", i * cellW + cellW / 2, cy, cellW, CH, { text, ix: String(i), cls });
+    if (e[0] === "R" && heap[e[1]] && (heap[e[1]].t === "lnode" || heap[e[1]].t === "tnode")) {
+      edges.push({ key: `r${h.id}:${i}`, kind: "ref", a: it.key, toId: e[1], sa: "b", sb: "t" });
+    }
+  }
+  if (h.n > n) add(sec, `c${h.id}:more`, "cell", n * cellW + cellW / 2, cy, cellW, CH, { text: "…", ix: "", cls: ["out"] });
+  if (!n) add(sec, `c${h.id}:empty`, "cell", cellW / 2, cy, cellW, CH, { text: "vuoto", ix: "", cls: ["out"] });
+  // etichette fronte/coda/cima
+  const endLbl = (i, text) => add(sec, `m${h.id}:${text}`, "pill", i * cellW + cellW / 2, top - 14, pillW(text), PH, { text, dir: "down", cls: ["neutral"] });
+  if (n && kind === "stack") endLbl(n - 1, "cima");
+  if (n && (kind === "coda" || kind === "deque")) { endLbl(0, "fronte"); if (n > 1) endLbl(n - 1, "fondo"); }
+  // puntatori sotto le celle
+  const stackAt = new Map();
+  let maxK = 0;
+  for (const p of ptrs) {
+    const k = stackAt.get(p.i) || 0;
+    stackAt.set(p.i, k + 1);
+    maxK = Math.max(maxK, k + 1);
+    const out = p.i < 0 || p.i >= n;
+    add(sec, `p:${p.sc}:${p.name}:${h.id}`, "pill", p.i * cellW + cellW / 2, cy + CH / 2 + 34 + k * (PH + 4), pillW(p.name), PH,
+      { text: p.name, dir: "up", color: colorFor(p.name), cls: [p.sc === "G" ? "dim" : "", out ? "out" : ""] });
+  }
+  sec.h = Math.max(sec.h, cy + CH / 2 + 26 + maxK * (PH + 4));
+  // heap: vista ad albero dell'array
+  if (kind === "heap" && n > 1) {
+    const depth = Math.floor(Math.log2(n));
+    const width = Math.max(n * cellW, Math.pow(2, depth) * 46);
+    const y0 = sec.h + 36;
+    for (let i = 0; i < n; i++) {
+      const d = Math.floor(Math.log2(i + 1)), p = i + 1 - Math.pow(2, d);
+      const x = (p + 0.5) * width / Math.pow(2, d);
+      add(sec, `hn${h.id}:${i}`, "tnode", x, y0 + d * 56, TR * 2, TR * 2, { text: fmt(h.items[i], heap, 1), cls: [i === 0 ? "active" : ""] });
+      if (i > 0) edges.push({ key: `he${h.id}:${i}`, kind: "tree", a: `hn${h.id}:${(i - 1) >> 1}`, b: `hn${h.id}:${i}` });
+    }
+  }
+}
+
+// ---- matrici (griglie, tabelle DP 2D)
+function layoutMatrix(sec, id, h, heap, nm, ints, visited, queued, edges) {
+  const rows = h.items.map((e) => heap[e[1]]);
+  const R = rows.length, C = rows[0].items.length;
+  title(sec, nm, `matrice · ${R}×${C}`);
+  const byName = Object.fromEntries(ints.map((v) => [v.name, v.enc[1]]));
+  const vals = new Set(rows.flatMap((r) => r.items.map((e) => fmt(e, heap))));
+  const binary = [...vals].every((v) => ["0", "1", "'0'", "'1'"].includes(v));
+  const x0 = 22, y0 = TITLE + 22;
+  for (let c = 0; c < C; c++) add(sec, `mx${id}:c${c}`, "title", x0 + c * MW + MW / 2 - 4, y0 - 12, 8, 12, { names: String(c), kind: "" });
+  const rings = new Map();
+  for (const [a, b] of S.pairs) {
+    if (Number.isInteger(byName[a]) && Number.isInteger(byName[b]) && byName[a] >= 0 && byName[a] < R && byName[b] >= 0 && byName[b] < C) {
+      const k = byName[a] + ":" + byName[b];
+      if (!rings.has(k)) rings.set(k, `${a},${b}`);
+    }
+  }
+  for (let r = 0; r < R; r++) {
+    add(sec, `mx${id}:r${r}`, "title", 0, y0 + r * MW + MW / 2 - 4, 8, 12, { names: String(r), kind: "" });
+    for (let c = 0; c < C; c++) {
+      const e = rows[r].items[c];
+      const text = fmt(e, heap, 1, true);
+      const tk = `(${r},${c})`;
+      const cls = [];
+      if (binary && (text === "1")) cls.push("land");
+      if (queued.has(tk)) cls.push("queued"); else if (visited.has(tk)) cls.push("visited");
+      const ring = rings.get(r + ":" + c);
+      if (ring) cls.push("ring");
+      add(sec, `mc${id}:${r}:${c}`, "cell", x0 + c * MW + MW / 2, y0 + r * MW + MW / 2, MW, MW, { text: clip(text, 4), ix: "", cls, color: ring ? colorFor(ring) : "" });
+    }
+  }
+  // i puntatori (riga, colonna) stanno a destra della griglia, su righe distinte,
+  // con una freccia verso la cella evidenziata
+  let k = 0;
+  for (const [pos, label] of rings) {
+    const [r, c] = pos.split(":").map(Number);
+    const py = y0 + k * (PH + 8) + PH / 2;
+    const it = add(sec, `mp:${label}:${id}`, "pill", x0 + C * MW + 28 + pillW(label) / 2, py, pillW(label), PH, { text: label, dir: "none", color: colorFor(label) });
+    edges.push({ key: `mpe:${label}:${id}`, kind: "ptr", a: it.key, b: `mc${id}:${r}:${c}`, sa: "l", sb: "r", color: colorFor(label) });
+    k++;
+  }
+  sec.h = Math.max(sec.h, y0 + R * MW + 6);
+}
+
+// ---- linked list: ogni nodo tiene la sua "casa" (riga, colonna) finché può,
+// così inversioni e merge si vedono come frecce che cambiano direzione.
+function layoutLists(sec, heap, lnodes, roots, frames, items, edges) {
+  title(sec, ["linked list"], "");
+  const ids = [...lnodes].sort((a, b) => a - b);
+  const inDeg = new Map(ids.map((i) => [i, 0]));
+  for (const id of ids) { const nx = heap[id].next; if (nx[0] === "R" && inDeg.has(nx[1])) inDeg.set(nx[1], inDeg.get(nx[1]) + 1); }
+  const chains = [], done = new Set();
+  const follow = (start) => {
+    const c = [];
+    let cur = start;
+    while (cur !== undefined && !done.has(cur) && lnodes.has(cur)) {
+      done.add(cur); c.push(cur);
+      const nx = heap[cur].next;
+      cur = nx[0] === "R" ? nx[1] : undefined;
+    }
+    return c;
+  };
+  const heads = ids.filter((i) => inDeg.get(i) === 0);
+  heads.sort((a, b) => (S.lhome.has(a) ? 0 : 1) - (S.lhome.has(b) ? 0 : 1) || a - b);
+  for (const h of heads) chains.push(follow(h));
+  for (const id of ids) if (!done.has(id)) chains.push(follow(id));
+
+  const occ = new Map();
+  for (const id of ids) if (S.lhome.has(id)) {
+    const hm = S.lhome.get(id), k = hm.row + ":" + hm.col;
+    if (occ.has(k)) S.lhome.delete(id); else occ.set(k, id);
+  }
+  let maxRow = -1;
+  for (const hm of S.lhome.values()) maxRow = Math.max(maxRow, hm.row);
+  for (const c of chains) {
+    for (let k = 0; k < c.length; k++) {
+      const id = c[k];
+      if (S.lhome.has(id)) continue;
+      let spot = null;
+      const prev = k > 0 ? S.lhome.get(c[k - 1]) : null;
+      const next = k + 1 < c.length ? S.lhome.get(c[k + 1]) : null;
+      if (prev && !occ.has(prev.row + ":" + (prev.col + 1))) spot = { row: prev.row, col: prev.col + 1 };
+      else if (next && next.col > 0 && !occ.has(next.row + ":" + (next.col - 1))) spot = { row: next.row, col: next.col - 1 };
+      else { maxRow++; spot = { row: maxRow, col: 0 }; }
+      S.lhome.set(id, spot);
+      occ.set(spot.row + ":" + spot.col, id);
+    }
+  }
+  // compatta le righe vuote
+  const usedRows = [...new Set(ids.map((i) => S.lhome.get(i).row))].sort((a, b) => a - b);
+  const head = TITLE + LH / 2 + 12 + pillRows(roots, (id) => lnodes.has(id)) * (PH + 3);
+  const rowY = new Map(usedRows.map((r, i) => [r, head + i * (78 + LH)]));
+  const topFr = frames[frames.length - 1];
+  const pillsAt = new Map();
+  for (const id of ids) {
+    const hm = S.lhome.get(id);
+    const x = hm.col * LX + LW / 2, y = rowY.get(hm.row);
+    const cls = [];
+    for (const fr of frames) if (fr !== topFr && fr !== frames[0]) for (const [, e] of fr.vars) if (e[0] === "R" && e[1] === id) cls.push("onstack");
+    add(sec, "n" + id, "lnode", x, y, LW, LH, { text: fmt(heap[id].val, heap, 1), cls });
+    const nx = heap[id].next;
+    if (nx[0] === "R" && lnodes.has(nx[1])) edges.push({ key: "e" + id, kind: "next", a: "n" + id, b: "n" + nx[1] });
+    else if (nx[0] === "N") {
+      // ∅ a destra, oppure sotto se a destra c'è già un altro nodo
+      const right = occ.get(hm.row + ":" + (hm.col + 1));
+      const below = right !== undefined && lnodes.has(right);
+      if (below) add(sec, "z" + id, "null", x + 8, y + LH / 2 + 26, 16, 16, { text: "∅" });
+      else add(sec, "z" + id, "null", x + LW / 2 + 22, y, 16, 16, { text: "∅" });
+      edges.push({ key: "e" + id, kind: "null", a: "n" + id, b: "z" + id, sa: below ? "b" : "r", sb: below ? "t" : "l" });
+    }
+  }
+  nodePills(sec, roots, (id) => lnodes.has(id), LH, pillsAt);
+  sec.h += 6;
+}
+
+function pillRows(roots, isMine) {
+  const c = new Map();
+  for (const v of roots) if (v.enc[0] === "R" && isMine(v.enc[1]) && !shadowed(v, roots)) c.set(v.enc[1], (c.get(v.enc[1]) || 0) + 1);
+  return Math.max(0, ...c.values());
+}
+function shadowed(v, roots) {
+  // una variabile globale con lo stesso nome e valore di una locale non si ripete
+  return v.sc === "G" && roots.some((o) => o.sc === "T" && o.name === v.name && eqEnc(o.enc, v.enc));
+}
+function nodePills(sec, roots, isMine, nodeH, pillsAt) {
+  const pos = new Map(sec.items.filter((i) => i.key[0] === "n").map((i) => [i.key, i]));
+  for (const v of roots) {
+    if (v.enc[0] !== "R" || !isMine(v.enc[1]) || shadowed(v, roots)) continue;
+    const it = pos.get("n" + v.enc[1]);
+    if (!it) continue;
+    const k = pillsAt.get(it.key) || 0;
+    pillsAt.set(it.key, k + 1);
+    add(sec, `p:${v.sc}:${v.name}`, "pill", it.x, it.y - nodeH / 2 - 16 - k * (PH + 3), pillW(v.name), PH,
+      { text: v.name, dir: "down", color: colorFor(v.name), cls: [v.sc === "G" ? "dim" : ""] });
+  }
+}
+
+// ---- alberi binari: layout in-order
+function layoutTrees(sec, heap, tnodes, roots, frames, edges) {
+  title(sec, ["albero binario"], "");
+  const children = new Set();
+  for (const id of tnodes) for (const c of [heap[id].left, heap[id].right]) if (c[0] === "R") children.add(c[1]);
+  const rootIds = [...tnodes].filter((i) => !children.has(i)).sort((a, b) => a - b);
+  let xi = 0;
+  const placed = new Set();
+  const topFr = frames[frames.length - 1];
+  const onStack = new Set();
+  for (const fr of frames.slice(1, -1)) for (const [, e] of fr.vars) if (e[0] === "R" && tnodes.has(e[1])) onStack.add(e[1]);
+  const topRefs = new Set(topFr.vars.filter(([, e]) => e[0] === "R").map(([, e]) => e[1]));
+  let maxD = 0;
+  const head = TITLE + TR + 12 + pillRows(roots, (id) => tnodes.has(id)) * (PH + 3);
+  const visit = (id, d) => {
+    if (placed.has(id) || !tnodes.has(id)) return;
+    placed.add(id);
+    const h = heap[id];
+    if (h.left[0] === "R") visit(h.left[1], d + 1);
+    const cls = [];
+    if (onStack.has(id)) cls.push("onstack");
+    if (topRefs.has(id) && frames.length > 1) cls.push("active");
+    add(sec, "n" + id, "tnode", xi * TX + TR + 4, head + d * TY, TR * 2, TR * 2, { text: fmt(h.val, heap, 1), cls });
+    maxD = Math.max(maxD, d);
+    xi++;
+    if (h.right[0] === "R") visit(h.right[1], d + 1);
+    for (const [side, c] of [["L", h.left], ["R", h.right]]) if (c[0] === "R" && tnodes.has(c[1])) edges.push({ key: `t${id}${side}`, kind: "tree", a: "n" + id, b: "n" + c[1] });
+  };
+  for (const r of rootIds) { visit(r, 0); xi += 0.6; }
+  for (const id of tnodes) if (!placed.has(id)) visit(id, 0);
+  nodePills(sec, roots, (id) => tnodes.has(id), TR * 2, new Map());
+}
+
+// ---- grafi: layout a forze, posizioni memorizzate e trascinabili
+function layoutGraph(sec, id, h, heap, nm, roots, visited, queued, edges, isList) {
+  const entries = isList ? h.items.map((v, i) => [["I", i], v]) : h.entries;
+  const keys = entries.map(([k]) => fmt(k, heap));
+  const adj = entries.map(([, v]) => neighborsOf(v, heap) || []);
+  for (const ns of adj) for (const [k] of ns) if (!keys.includes(k)) keys.push(k);
+  title(sec, nm, `grafo · ${keys.length} nodi`);
+  const P = graphPositions(id, keys, entries.map(([k], i) => [fmt(k, heap), adj[i]]));
+  const pairs = new Set();
+  entries.forEach(([k], i) => adj[i].forEach(([t]) => pairs.add(fmt(k, heap) + "\u0000" + t)));
+  let minX = Infinity, minY = Infinity;
+  for (const k of keys) { const p = P.get(k); minX = Math.min(minX, p.x); minY = Math.min(minY, p.y); }
+  const ox = GR + 8 - minX, oy = TITLE + 44 - minY;
+  const pillsAt = new Map();
+  for (const k of keys) {
+    const p = P.get(k);
+    const cls = [];
+    const plain = k.replace(/^'|'$/g, "");
+    if (queued.has(k)) cls.push("queued"); else if (visited.has(k)) cls.push("visited");
+    add(sec, `g${id}:${k}`, "gnode", p.x + ox, p.y + oy, GR * 2, GR * 2, { text: clip(plain, 5), cls, gid: id, gk: k });
+  }
+  entries.forEach(([k], i) => {
+    const a = fmt(k, heap);
+    adj[i].forEach(([b, w]) => {
+      const both = pairs.has(b + "\u0000" + a);
+      if (both && a > b) return;
+      edges.push({ key: `ge${id}:${a}>${b}`, kind: "graph", a: `g${id}:${a}`, b: `g${id}:${b}`, undir: both });
+      if (w !== null) {
+        const pa = P.get(a), pb = P.get(b);
+        add(sec, `gw${id}:${a}>${b}`, "elabel", (pa.x + pb.x) / 2 + ox, (pa.y + pb.y) / 2 + oy, w.length * 7 + 8, 16, { text: w });
+      }
+    });
+  });
+  // variabili che contengono il nome di un nodo (node, cur, nei, ...)
+  for (const v of roots) {
+    if (v.enc[0] === "R" || !NODE_VAR.test(v.name)) continue;
+    const k = fmt(v.enc, heap);
+    const it = sec.items.find((i) => i.key === `g${id}:${k}`);
+    if (!it) continue;
+    const n = pillsAt.get(k) || 0;
+    pillsAt.set(k, n + 1);
+    add(sec, `p:${v.sc}:${v.name}:g${id}`, "pill", it.x, it.y - GR - 16 - n * (PH + 3), pillW(v.name), PH, { text: v.name, dir: "down", color: colorFor(v.name) });
+    it.props.cls.push("active");
+  }
+}
+function graphPositions(id, keys, adjList) {
+  if (!S.gpos.has(id)) S.gpos.set(id, new Map());
+  const P = S.gpos.get(id);
+  const missing = keys.filter((k) => !P.has(k));
+  if (!missing.length) return P;
+  const n = keys.length, R0 = Math.max(90, n * 22);
+  keys.forEach((k, i) => {
+    if (!P.has(k)) { const a = (2 * Math.PI * i) / n - Math.PI / 2; P.set(k, { x: Math.cos(a) * R0, y: Math.sin(a) * R0, fixed: false }); }
+  });
+  const E = [];
+  for (const [a, ns] of adjList) for (const [b] of ns) if (P.has(a) && P.has(b) && a !== b) E.push([a, b]);
+  const K = 125;
+  let temp = 60;
+  for (let it = 0; it < 300; it++) {
+    const disp = new Map(keys.map((k) => [k, { x: 0, y: 0 }]));
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      const a = P.get(keys[i]), b = P.get(keys[j]);
+      let dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy) || 0.01;
+      const f = (K * K) / d;
+      dx /= d; dy /= d;
+      disp.get(keys[i]).x += dx * f; disp.get(keys[i]).y += dy * f;
+      disp.get(keys[j]).x -= dx * f; disp.get(keys[j]).y -= dy * f;
+    }
+    for (const [ka, kb] of E) {
+      const a = P.get(ka), b = P.get(kb);
+      let dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy) || 0.01;
+      const f = (d * d) / K;
+      dx /= d; dy /= d;
+      disp.get(ka).x -= dx * f; disp.get(ka).y -= dy * f;
+      disp.get(kb).x += dx * f; disp.get(kb).y += dy * f;
+    }
+    for (const k of keys) {
+      const p = P.get(k), d = disp.get(k);
+      if (p.fixed || !missing.includes(k) && missing.length < n) continue;
+      p.x -= p.x * 0.02; p.y -= p.y * 0.02;
+      const len = Math.hypot(d.x, d.y) || 1;
+      p.x += (d.x / len) * Math.min(len, temp);
+      p.y += (d.y / len) * Math.min(len, temp);
+    }
+    temp *= 0.985;
+  }
+  return P;
+}
+
+// ---- dizionari (hash map)
+function layoutDict(sec, id, h, heap, nm, edges) {
+  title(sec, nm, `${h.c === "dict" ? "dict" : h.c} · ${h.n} ${h.n === 1 ? "chiave" : "chiavi"}`);
+  const rows = h.entries.map(([k, v]) => [fmt(k, heap, 1), v]);
+  const kw = Math.max(44, Math.min(160, Math.max(0, ...rows.map(([k]) => k.length)) * CHAR + 18));
+  const vt = rows.map(([, v]) => (v[0] === "R" && heap[v[1]] && (heap[v[1]].t === "lnode" || heap[v[1]].t === "tnode")) ? "•" : clip(fmt(v, heap, 1), 34));
+  const vw = Math.max(52, Math.min(280, Math.max(0, ...vt.map((t) => t.length)) * CHAR + 18));
+  const cols = rows.length > 12 ? 2 : 1;
+  const per = Math.ceil(rows.length / cols);
+  rows.forEach(([k, v], i) => {
+    const c = Math.floor(i / per), r = i % per;
+    const it = add(sec, `k${id}:${k}`, "kv", c * (kw + vw + 24) + (kw + vw) / 2, TITLE + 16 + r * 32 + 15, kw + vw, 30, { k, v: vt[i], kw });
+    if (v[0] === "R" && heap[v[1]] && (heap[v[1]].t === "lnode" || heap[v[1]].t === "tnode")) edges.push({ key: `rk${id}:${k}`, kind: "ref", a: it.key, toId: v[1], sa: "r", sb: "t" });
+  });
+  if (!rows.length) add(sec, `k${id}:empty`, "cell", 30, TITLE + 31, 60, 30, { text: "{}", ix: "", cls: ["out"] });
+}
+
+// ---- insiemi
+function layoutSet(sec, id, h, heap, nm) {
+  title(sec, nm, `set · ${h.n}`);
+  let x = 0, y = TITLE + 28;
+  const maxW = 560;
+  for (const e of h.items) {
+    const t = clip(fmt(e, heap, 1), 20);
+    const w = Math.max(34, t.length * CHAR + 18);
+    if (x + w > maxW && x > 0) { x = 0; y += 34; }
+    add(sec, `s${id}:${t}`, "chip", x + w / 2, y, w, 26, { text: t, cls: [] });
+    x += w + 6;
+  }
+  if (!h.items.length) add(sec, `s${id}:empty`, "chip", 30, y, 60, 26, { text: "set()", cls: ["out"] });
+}
+
+// ---- oggetti generici
+function layoutObj(sec, id, h, heap, nm, edges) {
+  title(sec, nm, h.c || "oggetto");
+  const lines = Object.entries(h.attrs || {}).map(([k, v]) => `${k} = ${clip(fmt(v, heap, 1), 36)}`);
+  if (h.t === "lnode" || h.t === "tnode") return;
+  const w = Math.max(120, Math.max(0, ...lines.map((l) => l.length)) * 7.2 + 24);
+  const hh = 30 + lines.length * 18;
+  add(sec, `o${id}`, "obj", w / 2, TITLE + 10 + hh / 2, w, hh, { head: h.c, lines });
+}
+
+// ---------------------------------------------------------------- DOM della scena
+function svg(tag, attrs = {}, parent) {
+  const el = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(el);
+  return el;
+}
+const LAYER = { back: $("#l-back"), edges: $("#l-edges"), nodes: $("#l-nodes"), pills: $("#l-pills") };
+
+function makeEl(it) {
+  const layer = it.kind === "shade" ? LAYER.back : it.kind === "pill" ? LAYER.pills : LAYER.nodes;
+  const g = svg("g", { class: "it k-" + it.kind }, layer);
+  const r = {};
+  switch (it.kind) {
+    case "cell": case "chip": case "elabel":
+      r.body = svg("rect", { class: "body", rx: it.kind === "chip" ? 13 : 3 }, g);
+      r.v = svg("text", { class: "v" }, g);
+      if (it.kind === "cell") r.ix = svg("text", { class: "ix" }, g);
+      break;
+    case "shade":
+      r.body = svg("rect", { class: "body", rx: 6 }, g); break;
+    case "lnode":
+      r.body = svg("rect", { class: "body", rx: 5 }, g);
+      r.div = svg("line", { class: "div" }, g);
+      r.v = svg("text", { class: "v" }, g);
+      r.dot = svg("circle", { class: "dot", r: 3.2 }, g);
+      break;
+    case "tnode": case "gnode":
+      r.body = svg("circle", { class: "body" }, g);
+      r.v = svg("text", { class: "v" }, g);
+      break;
+    case "pill":
+      r.tick = svg("path", { class: "tick" }, g);
+      r.body = svg("rect", { class: "body", rx: 10 }, g);
+      r.v = svg("text", { class: "v" }, g);
+      break;
+    case "title":
+      r.v = svg("text", { class: "v" }, g); break;
+    case "null":
+      r.v = svg("text", { class: "v" }, g); break;
+    case "kv":
+      r.kbody = svg("rect", { class: "kbody" }, g);
+      r.body = svg("rect", { class: "body" }, g);
+      r.kt = svg("text", { class: "kt" }, g);
+      r.vt = svg("text", { class: "vt" }, g);
+      break;
+    case "obj":
+      r.body = svg("rect", { class: "body", rx: 5 }, g);
+      r.hd = svg("text", { class: "hd" }, g);
+      r.lines = svg("text", {}, g);
+      break;
+  }
+  g.dataset.key = it.key;
+  return { g, r };
+}
+
+function setText(el, t) { if (el && el.textContent !== t) el.textContent = t; }
+
+function updateEl(node, it, prevText) {
+  const { g, r } = node, p = it.props;
+  const cls = ["it", "k-" + it.kind, ...(p.cls || []).filter(Boolean)];
+  const text = p.text ?? p.v ?? "";
+  const changed = prevText !== undefined && prevText !== text && it.kind !== "pill" && it.kind !== "title";
+  g.setAttribute("class", cls.join(" "));
+  if (changed) { g.classList.remove("flash"); void g.getBBox; requestAnimationFrame(() => g.classList.add("flash")); }
+  if (p.color) g.style.setProperty("--pc", p.color);
+  switch (it.kind) {
+    case "cell": case "chip": case "elabel": case "tnode": case "gnode": case "lnode": case "null":
+      setText(r.v, p.text);
+      if (r.v) r.v.style.fontSize = p.text && p.text.length > 5 ? "11px" : "";
+      if (r.ix) setText(r.ix, p.ix);
+      break;
+    case "pill": setText(r.v, p.text); break;
+    case "title": {
+      r.v.textContent = "";
+      const a = svg("tspan", { class: "nm" }, r.v); a.textContent = p.names;
+      if (p.kind) { const b = svg("tspan", { class: "kind", dx: 8 }, r.v); b.textContent = p.kind; }
+      break;
+    }
+    case "kv": setText(r.kt, p.k); setText(r.vt, p.v); break;
+    case "obj": {
+      setText(r.hd, p.head);
+      r.lines.textContent = "";
+      p.lines.forEach((l, i) => { const t = svg("tspan", { x: 0, dy: i === 0 ? 0 : 18 }, r.lines); t.textContent = l; });
+      break;
+    }
+  }
+  node.text = text;
+  node.kind = it.kind;
+}
+
+function placeEl(node, it, c) {
+  const { g, r } = node;
+  g.setAttribute("transform", `translate(${c.x.toFixed(1)},${c.y.toFixed(1)})`);
+  g.style.opacity = c.o;
+  const w = c.w, h = c.h;
+  switch (it.kind) {
+    case "cell": case "chip": case "shade": case "elabel":
+      r.body.setAttribute("x", -w / 2); r.body.setAttribute("y", -h / 2);
+      r.body.setAttribute("width", w); r.body.setAttribute("height", h);
+      if (r.ix) { r.ix.setAttribute("y", h / 2 + 10); }
+      break;
+    case "lnode":
+      r.body.setAttribute("x", -w / 2); r.body.setAttribute("y", -h / 2);
+      r.body.setAttribute("width", w); r.body.setAttribute("height", h);
+      r.div.setAttribute("x1", w / 2 - 18); r.div.setAttribute("x2", w / 2 - 18);
+      r.div.setAttribute("y1", -h / 2); r.div.setAttribute("y2", h / 2);
+      r.v.setAttribute("x", -9);
+      r.dot.setAttribute("cx", w / 2 - 9);
+      break;
+    case "tnode": case "gnode":
+      r.body.setAttribute("r", w / 2); break;
+    case "pill": {
+      r.body.setAttribute("x", -w / 2); r.body.setAttribute("y", -h / 2);
+      r.body.setAttribute("width", w); r.body.setAttribute("height", h);
+      const up = it.props.dir === "up";
+      const ty = up ? -h / 2 : h / 2, tip = up ? -h / 2 - 7 : h / 2 + 7;
+      r.tick.setAttribute("d", it.props.dir === "none" ? "" : `M-5,${ty} L0,${tip} L5,${ty} Z`);
+      break;
+    }
+    case "kv": {
+      const kw = it.props.kw;
+      r.kbody.setAttribute("x", -w / 2); r.kbody.setAttribute("y", -h / 2);
+      r.kbody.setAttribute("width", kw); r.kbody.setAttribute("height", h);
+      r.body.setAttribute("x", -w / 2 + kw); r.body.setAttribute("y", -h / 2);
+      r.body.setAttribute("width", w - kw); r.body.setAttribute("height", h);
+      r.kt.setAttribute("x", -w / 2 + 9); r.vt.setAttribute("x", -w / 2 + kw + 9);
+      break;
+    }
+    case "obj":
+      r.body.setAttribute("x", -w / 2); r.body.setAttribute("y", -h / 2);
+      r.body.setAttribute("width", w); r.body.setAttribute("height", h);
+      r.hd.setAttribute("x", -w / 2 + 10); r.hd.setAttribute("y", -h / 2 + 15);
+      r.lines.setAttribute("transform", `translate(${-w / 2 + 10},${-h / 2 + 36})`);
+      r.lines.querySelectorAll("tspan").forEach((t) => t.setAttribute("x", 0));
+      break;
+  }
+}
+
+// ---------------------------------------------------------------- frecce
+function anchor(c, side) {
+  switch (side) {
+    case "r": return [c.x + c.w / 2, c.y, 1, 0];
+    case "l": return [c.x - c.w / 2, c.y, -1, 0];
+    case "t": return [c.x, c.y - c.h / 2, 0, -1];
+    case "b": return [c.x, c.y + c.h / 2, 0, 1];
+  }
+  return [c.x, c.y, 0, 0];
+}
+function edgeGeom(e, A, B) {
+  let sa = e.sa || "r", sb = e.sb || "l";
+  if (e.kind === "next") {
+    const dy = B.y - A.y, dx = B.x - A.x;
+    if (A === B) { sa = "t"; sb = "t"; }
+    else if (Math.abs(dy) < 8) {
+      if (dx > 0) { if (dx < LX * 1.6) { sa = "r"; sb = "l"; } else { sa = "b"; sb = "b"; } }
+      else { if (-dx < LX * 1.6) { sa = "l"; sb = "r"; } else { sa = "b"; sb = "b"; } }
+    } else if (Math.abs(dx) < LX * 0.6) { sa = dy > 0 ? "b" : "t"; sb = dy > 0 ? "t" : "b"; }
+    else { sa = dx > 0 ? "r" : "l"; sb = dx > 0 ? "l" : "r"; }
+  }
+  if (e.kind === "tree") { sa = "b"; sb = "t"; }
+  if (e.kind === "graph" || e.kind === "tree") {
+    const dx = B.x - A.x, dy = B.y - A.y, d = Math.hypot(dx, dy) || 1;
+    const ux = dx / d, uy = dy / d, ra = A.w / 2, rb = B.w / 2 + (e.kind === "graph" ? 2 : 0);
+    return [A.x + ux * ra, A.y + uy * ra, 0, 0, B.x - ux * rb, B.y - uy * rb, 0, 0];
+  }
+  const a = anchor(A, sa), b = anchor(B, sb);
+  if (e.kind === "tree") { a[1] -= 0; }
+  return [a[0], a[1], a[2], a[3], b[0], b[1], b[2], b[3]];
+}
+function edgePath(g, self) {
+  const [x1, y1, nx1, ny1, x2, y2, nx2, ny2] = g;
+  if (self) return `M${x1 - 10},${y1} C${x1 - 30},${y1 - 50} ${x2 + 30},${y2 - 50} ${x2 + 10},${y2}`;
+  const d = Math.hypot(x2 - x1, y2 - y1);
+  const k = Math.min(70, Math.max(24, d * 0.45));
+  if (!nx1 && !ny1 && !nx2 && !ny2) return `M${x1.toFixed(1)},${y1.toFixed(1)} L${x2.toFixed(1)},${y2.toFixed(1)}`;
+  const straight = (nx1 === -nx2 && ny1 === -ny2) && ((nx1 && Math.abs(y1 - y2) < 1) || (ny1 && Math.abs(x1 - x2) < 1));
+  if (straight) return `M${x1.toFixed(1)},${y1.toFixed(1)} L${x2.toFixed(1)},${y2.toFixed(1)}`;
+  return `M${x1.toFixed(1)},${y1.toFixed(1)} C${(x1 + nx1 * k).toFixed(1)},${(y1 + ny1 * k).toFixed(1)} ${(x2 + nx2 * k).toFixed(1)},${(y2 + ny2 * k).toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`;
+}
+
+// ---------------------------------------------------------------- motore di animazione
+const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const lerp = (a, b, t) => a + (b - a) * t;
+
+function applyScene(scene, dur) {
+  const now = performance.now();
+  const seenKeys = new Set();
+  for (const it of scene.items) {
+    seenKeys.add(it.key);
+    let node = S.items.get(it.key);
+    const to = { x: it.x, y: it.y, w: it.w, h: it.h, o: 1 };
+    if (!node || node.kind !== it.kind) {
+      if (node) node.g.remove();
+      node = makeEl(it);
+      node.cur = { ...to, o: 0 };
+      // i puntatori nuovi compaiono dall'alto, il resto sfuma sul posto
+      if (it.kind === "pill") node.cur.y += it.props.dir === "up" ? 14 : -14;
+      S.items.set(it.key, node);
+      updateEl(node, it, undefined);
+    } else {
+      updateEl(node, it, node.text);
+    }
+    node.it = it;
+    node.from = { ...node.cur };
+    node.to = to;
+    node.dying = false;
+  }
+  for (const [k, node] of S.items) if (!seenKeys.has(k)) {
+    node.from = { ...node.cur };
+    node.to = { ...node.cur, o: 0 };
+    node.dying = true;
+  }
+  const seenEdges = new Set();
+  for (const e of scene.edges) {
+    seenEdges.add(e.key);
+    let ed = S.edges.get(e.key);
+    if (!ed) {
+      ed = { el: svg("path", { class: "edge k-" + e.kind + (e.undir ? " undir" : ""), "marker-end": "url(#ah)" }, LAYER.edges), last: null, o: 0 };
+      S.edges.set(e.key, ed);
+    }
+    ed.el.setAttribute("class", "edge k-" + e.kind + (e.undir ? " undir" : ""));
+    if (e.color) ed.el.style.setProperty("--pc", e.color);
+    if (e.kind === "tree" || e.kind === "ptr" || e.undir) ed.el.removeAttribute("marker-end"); else ed.el.setAttribute("marker-end", "url(#ah)");
+    ed.e = e;
+    ed.start = ed.last ? ed.last.slice() : null;
+    ed.fromO = ed.o;
+    ed.toO = 1;
+    ed.dying = false;
+  }
+  for (const [k, ed] of S.edges) if (!seenEdges.has(k)) { ed.dying = true; ed.fromO = ed.o; ed.toO = 0; ed.start = ed.last; }
+
+  // inquadratura
+  if (S.autoFit) S.camTo = fitBox(scene.items);
+  S.camFrom = { ...S.view };
+  S.anim = { t0: now, dur: REDUCED ? 0 : dur };
+  if (!S.raf) S.raf = requestAnimationFrame(frame);
+}
+
+function frame(now) {
+  S.raf = null;
+  const a = S.anim;
+  const t = a.dur <= 0 ? 1 : Math.min(1, (now - a.t0) / a.dur);
+  const k = ease(t);
+  for (const [key, node] of S.items) {
+    const f = node.from, to = node.to;
+    node.cur = { x: lerp(f.x, to.x, k), y: lerp(f.y, to.y, k), w: lerp(f.w, to.w, k), h: lerp(f.h, to.h, k), o: lerp(f.o, to.o, k) };
+    placeEl(node, node.it, node.cur);
+    if (t >= 1 && node.dying) { node.g.remove(); S.items.delete(key); }
+  }
+  for (const [key, ed] of S.edges) {
+    const A = S.items.get(ed.e.a), B = S.items.get(ed.e.b);
+    if (!A || !B) { ed.el.remove(); S.edges.delete(key); continue; }
+    const target = edgeGeom(ed.e, A.cur, B.cur);
+    let g = target;
+    if (ed.start && !ed.dying) g = target.map((v, i) => (i % 4 < 2 ? lerp(ed.start[i], v, k) : v));
+    else if (ed.dying && ed.start) g = ed.start;
+    ed.last = g;
+    ed.o = lerp(ed.fromO, ed.toO, k);
+    ed.el.setAttribute("d", edgePath(g, ed.e.a === ed.e.b));
+    ed.el.style.opacity = Math.min(ed.o, A.cur.o, B.cur.o);
+    if (t >= 1 && ed.dying) { ed.el.remove(); S.edges.delete(key); }
+  }
+  if (S.autoFit && S.camTo) {
+    const c = S.camFrom, d = S.camTo;
+    S.view = { x: lerp(c.x, d.x, k), y: lerp(c.y, d.y, k), w: lerp(c.w, d.w, k), h: lerp(c.h, d.h, k) };
+  }
+  setView();
+  if (t < 1) S.raf = requestAnimationFrame(frame);
+}
+
+// ---------------------------------------------------------------- camera
+const scene = $("#scene");
+function setView() {
+  const v = S.view;
+  scene.setAttribute("viewBox", `${v.x.toFixed(1)} ${v.y.toFixed(1)} ${Math.max(1, v.w).toFixed(1)} ${Math.max(1, v.h).toFixed(1)}`);
+}
+function fitBox(items) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const it of items) {
+    x0 = Math.min(x0, it.x - it.w / 2); y0 = Math.min(y0, it.y - it.h / 2);
+    x1 = Math.max(x1, it.x + it.w / 2 + (it.kind === "title" ? 120 : 0)); y1 = Math.max(y1, it.y + it.h / 2);
+  }
+  if (!items.length) { x0 = 0; y0 = 0; x1 = 400; y1 = 200; }
+  const pad = 28;
+  x0 -= pad; y0 -= pad; x1 += pad; y1 += pad;
+  const rect = scene.getBoundingClientRect();
+  const aspect = (rect.width || 800) / (rect.height || 500);
+  let w = Math.max(x1 - x0, 460), h = Math.max(y1 - y0, 260);
+  if (w / h > aspect) h = w / aspect; else w = h * aspect;
+  return { x: x0 - (w - (x1 - x0)) / 2, y: y0 - (h - (y1 - y0)) / 2 * 0.4, w, h };
+}
+function zoomAt(f, cx, cy) {
+  const v = S.view;
+  const nx = cx - (cx - v.x) * f, ny = cy - (cy - v.y) * f;
+  S.view = { x: nx, y: ny, w: v.w * f, h: v.h * f };
+  S.autoFit = false;
+  setView();
+}
+function toSvg(ev) {
+  const r = scene.getBoundingClientRect(), v = S.view;
+  const s = Math.max(v.w / r.width, v.h / r.height);
+  const ox = (r.width * s - v.w) / 2, oy = (r.height * s - v.h) / 2;
+  return { x: v.x - ox + (ev.clientX - r.left) * s, y: v.y - oy + (ev.clientY - r.top) * s, s };
+}
+scene.addEventListener("wheel", (ev) => {
+  ev.preventDefault();
+  const p = toSvg(ev);
+  zoomAt(Math.exp(ev.deltaY * 0.0015), p.x, p.y);
+}, { passive: false });
+let drag = null;
+scene.addEventListener("pointerdown", (ev) => {
+  const g = ev.target.closest("g.it");
+  const p = toSvg(ev);
+  if (g && S.items.has(g.dataset.key)) {
+    const node = S.items.get(g.dataset.key);
+    const it = node.it;
+    if (it.kind === "gnode") drag = { mode: "gnode", it, start: p, pos: S.gpos.get(it.props.gid).get(it.props.gk), ox: 0, oy: 0 };
+    else drag = { mode: "sec", sec: it.sec, start: p, off: { ...(S.offs.get(it.sec) || { x: 0, y: 0 }) } };
+    if (drag.pos) { drag.ox = drag.pos.x; drag.oy = drag.pos.y; }
+  } else {
+    drag = { mode: "pan", start: { x: ev.clientX, y: ev.clientY }, view: { ...S.view }, s: p.s };
+    scene.classList.add("panning");
+  }
+  scene.setPointerCapture(ev.pointerId);
+});
+scene.addEventListener("pointermove", (ev) => {
+  if (!drag) return;
+  if (drag.mode === "pan") {
+    S.view = { ...drag.view, x: drag.view.x - (ev.clientX - drag.start.x) * drag.s, y: drag.view.y - (ev.clientY - drag.start.y) * drag.s };
+    S.autoFit = false;
+    setView();
+    return;
+  }
+  const p = toSvg(ev);
+  const dx = p.x - drag.start.x, dy = p.y - drag.start.y;
+  if (drag.mode === "gnode") { drag.pos.x = drag.ox + dx; drag.pos.y = drag.oy + dy; drag.pos.fixed = true; }
+  else S.offs.set(drag.sec, { x: drag.off.x + dx, y: drag.off.y + dy });
+  S.autoFit = false;
+  render(0);
+});
+const endDrag = () => { drag = null; scene.classList.remove("panning"); };
+scene.addEventListener("pointerup", endDrag);
+scene.addEventListener("pointercancel", endDrag);
+$("#zoom-in").onclick = () => zoomAt(0.8, S.view.x + S.view.w / 2, S.view.y + S.view.h / 2);
+$("#zoom-out").onclick = () => zoomAt(1.25, S.view.x + S.view.w / 2, S.view.y + S.view.h / 2);
+$("#fit").onclick = () => { S.autoFit = true; S.offs.clear(); render(400); };
+new ResizeObserver(() => { if (S.autoFit && S.trace) render(0); drawTimeline(); }).observe(scene);
+
+// ---------------------------------------------------------------- editor
+let cm = null;
+const ta = $("#code");
+const editor = {
+  get: () => (cm ? cm.getValue() : ta.value),
+  set: (v) => { S.silent = true; if (cm) cm.setValue(v); else ta.value = v; S.silent = false; },
+  lineText: (n) => (cm ? cm.getLine(n - 1) : ta.value.split("\n")[n - 1]) || "",
+  mark(next, prev, err) {
+    if (!cm) return;
+    for (const [l, c] of S.lastLines) cm.removeLineClass(l, "background", c);
+    S.lastLines = [];
+    const put = (n, c) => { if (n && n <= cm.lineCount()) { cm.addLineClass(n - 1, "background", c); S.lastLines.push([n - 1, c]); } };
+    if (prev && prev !== next) put(prev, "line-prev");
+    put(next, err ? "line-err" : "line-next");
+    if (next) cm.scrollIntoView({ line: next - 1, ch: 0 }, 60);
+  },
+};
+if (window.CodeMirror) {
+  cm = CodeMirror.fromTextArea(ta, {
+    mode: "python", lineNumbers: true, indentUnit: 4, tabSize: 4, indentWithTabs: false,
+    extraKeys: { Tab: (c) => c.replaceSelection("    "), "Ctrl-Enter": () => run(), "Cmd-Enter": () => run() },
+  });
+  cm.on("change", () => markStale(true));
+  cm.on("gutterClick", (c, line) => jumpToLine(line + 1));
+} else {
+  ta.addEventListener("input", () => markStale(true));
+  ta.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey)) { ev.preventDefault(); run(); }
+    if (ev.key === "Tab") { ev.preventDefault(); document.execCommand("insertText", false, "    "); }
+  });
+}
+function markStale(v) {
+  S.stale = v; $("#stale").hidden = !v;
+  if (v && !S.silent) { saveDraft(); exSel.value = "-1"; }
+}
+function saveDraft() { try { localStorage.setItem("moviola-draft", editor.get()); } catch (e) { /* storage non disponibile */ } }
+function loadDraft() { try { return localStorage.getItem("moviola-draft"); } catch (e) { return null; } }
+
+function jumpToLine(line) {
+  if (!S.trace) return;
+  const st = S.trace.steps;
+  for (let k = 1; k <= st.length; k++) {
+    const j = (S.i + k) % st.length;
+    if (st[j].line === line && st[j].ev === "line") { pause(); go(j); return; }
+  }
+}
+
+// ---------------------------------------------------------------- pannelli
+function renderCaption(step, idx) {
+  const n = S.trace.steps.length;
+  const c = $("#caption");
+  c.textContent = "";
+  const add = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; e.textContent = text; c.appendChild(e); return e; };
+  add("span", "step", `passo ${idx + 1} / ${n}`);
+  const top = step.stack[step.stack.length - 1];
+  const last = idx === n - 1;
+  if (last && S.trace.error) {
+    add("span", "chip err", "errore");
+    add("span", "", S.trace.error);
+    return;
+  }
+  if (step.ev === "return") {
+    add("span", "chip ret", "ritorno");
+    add("code", "", `${top.fn}() restituisce ${clip(fmt(step.ret, step.heap), 60)}`);
+  } else {
+    add("span", "chip", `riga ${step.line}`);
+    add("code", "", editor.lineText(step.line).trim() || " ");
+  }
+  if (top.fn !== "globale") add("span", "step", `in ${top.fn}()`);
+  if (last && S.trace.limit) add("span", "chip err", "limite di passi raggiunto");
+}
+
+function renderFrames(step, prev) {
+  const box = $("#frames");
+  box.textContent = "";
+  const prevByFid = new Map((prev ? prev.stack : []).map((f) => [f.fid, f]));
+  const frames = step.stack.slice().reverse();
+  frames.forEach((fr, i) => {
+    const el = document.createElement("div");
+    el.className = "frame" + (i === 0 ? " top" : "") + (i > 0 && frames.length > 4 && i < frames.length - 1 ? " compact" : "");
+    const h = document.createElement("h3");
+    h.textContent = fr.fn === "globale" ? "globale" : fr.fn + "()";
+    const sm = document.createElement("small");
+    sm.textContent = "riga " + fr.line;
+    h.appendChild(sm);
+    el.appendChild(h);
+    const pv = prevByFid.get(fr.fid);
+    const pmap = new Map(pv ? pv.vars.map(([k, v]) => [k, v]) : []);
+    const prevHeap = prev ? prev.heap : {};
+    if (el.classList.contains("compact")) {
+      const a = document.createElement("div");
+      a.className = "args";
+      a.textContent = fr.vars.filter(([k]) => k !== "self").slice(0, 4).map(([k, v]) => `${k}=${clip(fmt(v, step.heap, 1), 18)}`).join(", ");
+      el.appendChild(a);
+    }
+    const tb = document.createElement("table");
+    for (const [k, v] of fr.vars) {
+      if (k === "self" && v[0] === "R" && step.heap[v[1]] && Object.keys(step.heap[v[1]].attrs || {}).length === 0) continue;
+      const tr = document.createElement("tr");
+      const now = fmt(v, step.heap, 1);
+      const was = pmap.has(k) ? fmt(pmap.get(k), prevHeap, 1) : undefined;
+      if (pv && was !== now) tr.className = "chg";
+      const a = document.createElement("td"); a.textContent = k;
+      const b = document.createElement("td"); b.textContent = clip(now, 90);
+      tr.append(a, b);
+      tb.appendChild(tr);
+    }
+    if (i === 0 && step.ev === "return") {
+      const tr = document.createElement("tr"); tr.className = "ret";
+      const a = document.createElement("td"); a.textContent = "↩";
+      const b = document.createElement("td"); b.textContent = clip(fmt(step.ret, step.heap, 1), 90);
+      tr.append(a, b); tb.appendChild(tr);
+    }
+    if (!tb.children.length) {
+      const tr = document.createElement("tr");
+      const a = document.createElement("td"); a.textContent = "—";
+      const b = document.createElement("td"); b.textContent = "nessuna variabile";
+      tr.append(a, b); tb.appendChild(tr);
+    }
+    el.appendChild(tb);
+    box.appendChild(el);
+  });
+}
+
+function renderOutput(step, idx) {
+  const out = $("#out");
+  out.textContent = "";
+  const txt = S.trace.output.slice(0, step.out);
+  const last = idx === S.trace.steps.length - 1;
+  out.appendChild(document.createTextNode(last ? S.trace.output : txt));
+  if (last && S.trace.error) {
+    const e = document.createElement("span"); e.className = "err";
+    e.textContent = (S.trace.output ? "\n" : "") + S.trace.error + (S.trace.errline ? ` (riga ${S.trace.errline})` : "");
+    out.appendChild(e);
+  }
+  if (last && S.trace.limit) {
+    const e = document.createElement("span"); e.className = "note";
+    e.textContent = "\nEsecuzione interrotta: limite di passi raggiunto. Controlla i cicli o alza il limite.";
+    out.appendChild(e);
+  }
+  if (!out.textContent) { const e = document.createElement("span"); e.className = "note"; e.textContent = "Qui compare quello che stampi con print()."; out.appendChild(e); }
+  out.scrollTop = out.scrollHeight;
+}
+
+// ---------------------------------------------------------------- timeline
+const tlBox = $("#timeline"), tl = $("#tl");
+function drawTimeline() {
+  const r = tlBox.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  tl.width = Math.max(1, r.width * dpr); tl.height = Math.max(1, r.height * dpr);
+  const ctx = tl.getContext("2d");
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, r.width, r.height);
+  if (!S.trace || !S.trace.steps.length) return;
+  const cs = getComputedStyle(document.documentElement);
+  const accent = cs.getPropertyValue("--accent").trim(), soft = cs.getPropertyValue("--accent-soft").trim();
+  const muted = cs.getPropertyValue("--muted").trim(), danger = cs.getPropertyValue("--danger").trim();
+  const st = S.trace.steps, n = st.length;
+  const maxD = Math.max(1, ...st.map((s) => s.stack.length));
+  const W = r.width, H = r.height - 6;
+  ctx.fillStyle = soft;
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(0, H + 3);
+  for (let k = 0; k < n; k++) {
+    const x = (k / Math.max(1, n - 1)) * W, y = H + 3 - (st[k].stack.length / maxD) * (H - 6);
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(W, H + 3);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  const x = (S.i / Math.max(1, n - 1)) * W;
+  ctx.fillStyle = S.trace.error && S.i === n - 1 ? danger : accent;
+  ctx.fillRect(Math.min(W - 3, Math.max(0, x - 1.5)), 0, 3, r.height);
+  ctx.fillStyle = muted;
+  ctx.font = "11px " + cs.getPropertyValue("--f-mono");
+  ctx.fillText(`${S.i + 1}/${n}`, Math.min(W - 60, x + 6), 12);
+  tlBox.setAttribute("aria-valuemax", n);
+  tlBox.setAttribute("aria-valuenow", S.i + 1);
+}
+let tlDrag = false;
+const seekFromEvent = (ev) => {
+  const r = tlBox.getBoundingClientRect();
+  const f = Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width));
+  go(Math.round(f * (S.trace.steps.length - 1)), 140);
+};
+tlBox.addEventListener("pointerdown", (ev) => { if (!S.trace) return; pause(); tlDrag = true; tlBox.setPointerCapture(ev.pointerId); seekFromEvent(ev); });
+tlBox.addEventListener("pointermove", (ev) => { if (tlDrag) seekFromEvent(ev); });
+tlBox.addEventListener("pointerup", () => { tlDrag = false; });
+
+// ---------------------------------------------------------------- navigazione
+function animDur() { return Math.max(140, Math.min(650, (1000 / S.sps) * 0.8)); }
+function render(dur) {
+  if (!S.trace || !S.trace.steps.length) return;
+  const step = S.trace.steps[S.i];
+  const sc = buildScene(step);
+  applyScene(sc, dur);
+  $("#empty-scene").hidden = sc.items.length > 0;
+}
+function go(i, dur) {
+  if (!S.trace || !S.trace.steps.length) return;
+  const prevIdx = S.i;
+  S.i = Math.max(0, Math.min(S.trace.steps.length - 1, i));
+  const step = S.trace.steps[S.i];
+  const prev = S.i > 0 ? S.trace.steps[S.i - 1] : null;
+  render(dur ?? (Math.abs(S.i - prevIdx) > 1 ? 260 : animDur()));
+  const last = S.i === S.trace.steps.length - 1;
+  const errHere = last && S.trace.error;
+  editor.mark(errHere && S.trace.errline ? S.trace.errline : step.line, prev ? prev.line : null, errHere);
+  renderCaption(step, S.i);
+  renderFrames(step, prev);
+  renderOutput(step, S.i);
+  drawTimeline();
+}
+function play() {
+  if (!S.trace) return;
+  if (S.i >= S.trace.steps.length - 1) go(0, 200);
+  S.playing = true;
+  $("#b-play span").textContent = "Pausa";
+  $("#b-play").setAttribute("aria-label", "Pausa");
+  $("#b-play svg").innerHTML = '<path d="M4 3h3v10H4zM9 3h3v10H9z"/>';
+  tick();
+}
+function tick() {
+  clearTimeout(S.timer);
+  if (!S.playing) return;
+  S.timer = setTimeout(() => {
+    if (S.i >= S.trace.steps.length - 1) { pause(); return; }
+    go(S.i + 1);
+    tick();
+  }, 1000 / S.sps);
+}
+function pause() {
+  S.playing = false;
+  clearTimeout(S.timer);
+  $("#b-play span").textContent = "Play";
+  $("#b-play").setAttribute("aria-label", "Riproduci");
+  $("#b-play svg").innerHTML = '<path d="M4 2.5v11l9-5.5z"/>';
+}
+$("#b-play").onclick = () => (S.playing ? pause() : play());
+$("#b-next").onclick = () => { pause(); go(S.i + 1); };
+$("#b-prev").onclick = () => { pause(); go(S.i - 1); };
+$("#b-first").onclick = () => { pause(); go(0, 300); };
+$("#b-last").onclick = () => { pause(); go(Infinity, 300); };
+$("#speed").onchange = (ev) => { S.sps = +ev.target.value; };
+document.addEventListener("keydown", (ev) => {
+  const inEditor = ev.target.closest && (ev.target.closest(".CodeMirror") || ev.target === ta || ev.target.tagName === "SELECT");
+  if (inEditor) return;
+  if (ev.key === " ") { ev.preventDefault(); S.playing ? pause() : play(); }
+  else if (ev.key === "ArrowRight") { ev.preventDefault(); pause(); go(S.i + 1); }
+  else if (ev.key === "ArrowLeft") { ev.preventDefault(); pause(); go(S.i - 1); }
+  else if (ev.key === "Home") { pause(); go(0, 300); }
+  else if (ev.key === "End") { pause(); go(Infinity, 300); }
+});
+
+function loadTrace(trace, code) {
+  pause();
+  S.trace = trace;
+  S.i = 0;
+  S.lhome.clear(); S.gpos.clear(); S.offs.clear(); S.colors.clear();
+  for (const n of S.items.values()) n.g.remove();
+  for (const e of S.edges.values()) e.el.remove();
+  S.items.clear(); S.edges.clear();
+  S.autoFit = true;
+  analyzeCode(code);
+  for (const st of trace.steps.slice(0, 4000)) buildScene(st);
+  if (!trace.steps.length) {
+    // errore di sintassi o nessuna riga eseguita
+    $("#caption").textContent = "";
+    const c = document.createElement("span"); c.className = "chip err"; c.textContent = "errore";
+    const t = document.createElement("span"); t.textContent = trace.error || "Nessuna riga eseguita.";
+    $("#caption").append(c, t);
+    $("#out").textContent = trace.error || "";
+    $("#frames").textContent = "";
+    editor.mark(trace.errline, null, true);
+    drawTimeline();
+    return;
+  }
+  go(0, 0);
+}
+
+// ---------------------------------------------------------------- Python (Pyodide)
+let py = null, runTrace = null;
+function setStatus(state, text) {
+  const el = $("#py-status");
+  el.className = "py-status " + state;
+  el.querySelector("span").textContent = text;
+}
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement("script");
+    s.src = src; s.onload = res; s.onerror = () => rej(new Error("impossibile caricare " + src));
+    document.head.appendChild(s);
+  });
+}
+async function bootPython() {
+  let lastErr = null;
+  for (const base of PYODIDE_BASES) {
+    try {
+      await loadScript(base + "pyodide.js");
+      py = await loadPyodide({ indexURL: new URL(base, location.href).href });
+      py.runPython(TRACER_SRC);
+      runTrace = py.globals.get("run_trace");
+      setStatus("ok", "Python pronto");
+      $("#run").disabled = false;
+      return;
+    } catch (e) { lastErr = e; }
+  }
+  setStatus("err", "Python non disponibile: serve una connessione per scaricare Pyodide.");
+  console.error(lastErr);
+}
+async function run() {
+  if (!runTrace) { setStatus("", "Python in caricamento… riprova tra qualche secondo."); return; }
+  const code = editor.get();
+  const btn = $("#run");
+  btn.disabled = true;
+  setStatus("", "Esecuzione…");
+  await new Promise((r) => setTimeout(r, 20));
+  try {
+    const json = runTrace(code, +$("#maxsteps").value);
+    const trace = JSON.parse(json);
+    markStale(false);
+    loadTrace(trace, code);
+    setStatus("ok", `Python pronto · ${trace.steps.length} passi registrati`);
+    if (trace.steps.length > 1) play();
+  } catch (e) {
+    setStatus("err", "Errore interno del tracer: " + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+$("#run").onclick = run;
+
+// ---------------------------------------------------------------- avvio
+const exSel = $("#examples");
+{
+  const custom = document.createElement("option");
+  custom.value = "-1"; custom.textContent = "Il mio codice";
+  exSel.appendChild(custom);
+  const groups = new Map();
+  EXAMPLES.forEach((ex, i) => {
+    if (!groups.has(ex.tag)) { const g = document.createElement("optgroup"); g.label = ex.tag; groups.set(ex.tag, g); exSel.appendChild(g); }
+    const o = document.createElement("option");
+    o.value = i; o.textContent = ex.title;
+    groups.get(ex.tag).appendChild(o);
+  });
+}
+exSel.onchange = () => {
+  const i = +exSel.value;
+  if (i < 0) { const d = loadDraft(); if (d) { editor.set(d); markStale(true); exSel.value = "-1"; } return; }
+  editor.set(EXAMPLES[i].code);
+  S.stale = true; $("#stale").hidden = false;
+  if (runTrace) run();
+};
+exSel.value = "0";
+editor.set(EXAMPLES[0].code);
+markStale(false);
+loadTrace(FIRST_TRACE, EXAMPLES[0].code);
+setTimeout(() => play(), 500);
+bootPython();
+</script>
